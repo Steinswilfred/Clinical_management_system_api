@@ -1,5 +1,4 @@
 from django.db import models
-
 from receptionist.models import Appointment
 
 # Create your models here.

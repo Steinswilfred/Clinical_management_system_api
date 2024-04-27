@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+from django.shortcuts import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import JSONParser
 
@@ -109,3 +110,19 @@ def medicine_bill(request):
             medicines_bill_add_serializer.save()
             return JsonResponse(medicines_bill_add_serializer.data, safe=False, status=201)
         return JsonResponse(medicines_bill_add_serializer.errors, safe=False, status=400)
+    
+def medicine_bill_details(request,passed_id):
+        fetch = MedicinePrescriptionBill.objects.get(id=passed_id)
+        if request.method == 'GET':
+            serialize = MedicinePrescriptionBillSerializer(fetch)
+            return JsonResponse(serialize.data,safe=False,status=200)
+        elif request.method == 'PUT':
+            put = JSONParser().parse(request)
+            putseraize = MedicinePrescriptionBillSerializer(fetch,data=put)
+            if putseraize.is_valid():
+                putseraize.save()
+                return JsonResponse(putseraize.data,status=200)
+            return JsonResponse(putseraize.errors,status=400)
+        elif request.method == 'DELETE':
+            response = "Deleted successfully"
+            return HttpResponse(response,status=204)
