@@ -18,20 +18,12 @@ class Role(models.Model):
         return self.name
 
 
-class Designation(models.Model):
-    name = models.CharField(max_length=150)
-
-    def __str__(self):
-        return self.name
-
-
 class Staff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     dob = models.DateField()
     mobile_no = models.CharField(max_length=15)
-    designation = models.ManyToManyField(Designation)
     role = models.ForeignKey(Role, default=1, on_delete=models.CASCADE)
     address = models.TextField()
     image = models.ImageField(upload_to="profile/staff/images/", blank=True)

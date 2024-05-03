@@ -10,7 +10,6 @@ from rest_framework.permissions import IsAuthenticated
 from .models import (
     BloodGroup,
     ClinicInfo,
-    Designation,
     Doctor,
     Patient,
     Role,
@@ -21,7 +20,6 @@ from .models import (
 from .serializers import (
     BloodGroupSerializer,
     ClinicInfoSerializer,
-    DesignationSerializer,
     DoctorAddSerializer,
     DoctorSerializer,
     PatientAddSerializer,
@@ -32,6 +30,7 @@ from .serializers import (
     StaffSerializer,
     UserSerializer,
 )
+
 
 
 class BloodGroupsView(APIView):
@@ -119,49 +118,6 @@ class ClinicInfoView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class DesignationsView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        designations = Designation.objects.all()
-        serializer = DesignationSerializer(designations, many=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = DesignationSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class DesignationView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request, id):
-        designation = get_object_or_404(Designation, pk=id)
-        serializer = DesignationSerializer(designation)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def put(self, request, id):
-        designation = get_object_or_404(Designation, pk=id)
-        serializer = DesignationSerializer(instance=designation, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, id):
-        designation = get_object_or_404(Designation, pk=id)
-        designation.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class DoctorsView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -225,7 +181,7 @@ class StaffsView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        staffs = Staff.objects.exclude(role__name="Doctor")
+        staffs = Staff.objects.all()
         serializer = StaffSerializer(staffs, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -312,7 +268,7 @@ class RolesView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        roles = Role.objects.exclude(name="Doctor")
+        roles = Role.objects.all()
         serializer = RoleSerializer(roles, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)

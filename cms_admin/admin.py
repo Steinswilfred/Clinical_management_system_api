@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import (
     BloodGroup,
     ClinicInfo,
-    Designation,
+    # Designation,
     Doctor,
     Patient,
     Role,
@@ -14,7 +14,7 @@ from .models import (
 # Register your models here.
 admin.site.register(BloodGroup)
 admin.site.register(ClinicInfo)
-admin.site.register(Designation)
+# admin.site.register(Designation)
 admin.site.register(Doctor)
 admin.site.register(Patient)
 admin.site.register(Role)

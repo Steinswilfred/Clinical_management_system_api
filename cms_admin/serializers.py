@@ -1,11 +1,11 @@
 from django.contrib.auth.models import User
 
 from rest_framework import serializers
+from django.contrib.auth.hashers import make_password
 
 from .models import (
     BloodGroup,
     ClinicInfo,
-    Designation,
     Doctor,
     Patient,
     Role,
@@ -37,29 +37,11 @@ class RoleIdSerializer(serializers.ModelSerializer):
         return value
 
 
-class DesignationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Designation
-        fields = "__all__"
-
-
-class DesignationIdSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField()
-
-    class Meta:
-        model = Designation
-        fields = ("id",)
-
-    def validate_id(self, value):
-        return value
-
-
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
         fields = ("id", "username",)
-
 
 class UserIdSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
@@ -73,7 +55,6 @@ class UserIdSerializer(serializers.ModelSerializer):
 
 
 class StaffSerializer(serializers.ModelSerializer):
-    designation = DesignationSerializer(many=True)
     role = RoleSerializer()
     user = UserIdSerializer()
 
@@ -81,9 +62,7 @@ class StaffSerializer(serializers.ModelSerializer):
         model = Staff
         fields = "__all__"
 
-
 class StaffAddSerializer(serializers.ModelSerializer):
-    designation = DesignationIdSerializer(many=True)
     role = RoleIdSerializer()
     user = UserIdSerializer()
 
@@ -92,12 +71,10 @@ class StaffAddSerializer(serializers.ModelSerializer):
         exclude = ("image",)
 
     def create(self, validated_data):
-        designation_ids = validated_data.pop("designation")
         role_id = validated_data.pop("role")
         user_id = validated_data.pop("user")
-        designations = Designation.objects.filter(id__in=designation_ids)
+
         staff = Staff.objects.create(**validated_data, role_id=role_id, user_id=user_id)
-        staff.designation.set(designations)
         return staff
 
     def update(self, instance, validated_data):
@@ -111,25 +88,19 @@ class StaffAddSerializer(serializers.ModelSerializer):
         staff.is_active = validated_data.get("is_active", staff.is_active)
         staff.is_enable = validated_data.get("is_enable", staff.is_enable)
 
-        if validated_data.get("designation"):
-            designations = Designation.objects.filter(
-                id__in=validated_data.get("designation")
-            )
-            staff.designation.set(designations)
+        # Get the role_id and user_id from validated_data
+        role_id = validated_data.get("role", {}).get("id")
+        user_id = validated_data.get("user", {}).get("id")
+
+        # Ensure that role_id and user_id are provided
+        if role_id is not None:
+            staff.role_id = role_id
+        if user_id is not None:
+            staff.user_id = user_id
 
         staff.save()
 
         return staff
-
-    def validate_designation(self, values):
-        designation_ids = []
-        for value in values:
-            designation_id = value.get("id")
-            if not Designation.objects.filter(id=designation_id).exists():
-                raise serializers.ValidationError("Designation Doesn't Exist")
-            designation_ids.append(designation_id)
-
-        return designation_ids
 
     def validate_role(self, value):
         role_id = value.get("id")
@@ -146,7 +117,6 @@ class StaffAddSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Staff Already Exist")
 
         return user_id
-
 
 class StaffIdSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
@@ -196,6 +166,86 @@ class DoctorIdSerializer(serializers.ModelSerializer):
         return value
 
 
+# class DoctorAddSerializer(serializers.ModelSerializer):
+#     staff = StaffAddSerializer()
+#     specialization = SpecializationIdSerializer(many=True)
+
+#     class Meta:
+#         model = Doctor
+#         fields = "__all__"
+
+#     def create(self, validated_data):
+#         specialization_ids = validated_data.pop("specialization")
+#         staff_data = validated_data.pop("staff")
+
+#         designation_ids = staff_data.pop("designation")
+#         role_id = staff_data.pop("role")
+#         user_id = staff_data.pop("user")
+#         designations = Designation.objects.filter(id__in=designation_ids)
+#         staff = Staff.objects.create(**staff_data, role_id=role_id, user_id=user_id)
+#         staff.designation.set(designations)
+#         staff.save()
+
+#         specializations = Specialization.objects.filter(id__in=specialization_ids)
+#         doctor = Doctor.objects.create(**validated_data, staff=staff)
+#         doctor.specialization.set(specializations)
+#         doctor.save()
+
+#         return doctor
+
+#     def update(self, instance, validated_data):
+#         doctor = instance
+
+#         if validated_data.get("staff"):
+#             staff_data = validated_data.pop("staff")
+#             staff = instance.staff
+#             staff.first_name = staff_data.get("first_name", staff.first_name)
+#             staff.last_name = staff_data.get("last_name", staff.last_name)
+#             staff.dob = staff_data.get("dob", staff.dob)
+#             staff.mobile_no = staff_data.get("mobile_no", staff.mobile_no)
+#             staff.address = staff_data.get("address", staff.address)
+#             staff.image = staff_data.get("image", staff.image)
+#             staff.is_active = staff_data.get("is_active", staff.is_active)
+#             staff.is_enable = staff_data.get("is_enable", staff.is_enable)
+
+#             if staff_data.get("designation"):
+#                 designations = Designation.objects.filter(
+#                     id__in=staff_data.get("designation")
+#                 )
+#                 staff.designation.set(designations)
+
+#             staff.save()
+#             doctor.staff = staff
+
+#         if validated_data.get("specialization"):
+#             specialization_ids = validated_data.pop("specialization")
+#             specializations = Specialization.objects.filter(id__in=specialization_ids)
+#             doctor.specialization.set(specializations)
+
+#         doctor.consultation_fee = validated_data.get(
+#             "consultation_fee", doctor.consultation_fee
+#         )
+#         doctor.save()
+
+#         return doctor
+
+#     def validate_specialization(self, values):
+#         specialization_ids = []
+#         for value in values:
+#             designation_id = value.get("id")
+#             if not Specialization.objects.filter(id=designation_id).exists():
+#                 raise serializers.ValidationError("Specialization Doesn't Exist")
+#             specialization_ids.append(designation_id)
+
+#         return specialization_ids
+
+#     def validate_staff(self, value):
+#         if Doctor.objects.filter(staff_id=value.get("id")).exists():
+#             raise serializers.ValidationError("Doctor Already Exist")
+
+#         return value
+
+
 class DoctorAddSerializer(serializers.ModelSerializer):
     staff = StaffAddSerializer()
     specialization = SpecializationIdSerializer(many=True)
@@ -208,19 +258,18 @@ class DoctorAddSerializer(serializers.ModelSerializer):
         specialization_ids = validated_data.pop("specialization")
         staff_data = validated_data.pop("staff")
 
-        designation_ids = staff_data.pop("designation")
         role_id = staff_data.pop("role")
         user_id = staff_data.pop("user")
-        designations = Designation.objects.filter(id__in=designation_ids)
-        staff = Staff.objects.create(**staff_data, role_id=role_id, user_id=user_id)
-        staff.designation.set(designations)
-        staff.save()
+        
+        # Creating Staff instance
+        staff = Staff.objects.create(role_id=role_id, user_id=user_id, **staff_data)
 
         specializations = Specialization.objects.filter(id__in=specialization_ids)
-        doctor = Doctor.objects.create(**validated_data, staff=staff)
-        doctor.specialization.set(specializations)
-        doctor.save()
 
+        # Creating Doctor instance
+        doctor = Doctor.objects.create(staff=staff, **validated_data)
+        doctor.specialization.set(specializations)
+        
         return doctor
 
     def update(self, instance, validated_data):
@@ -237,13 +286,6 @@ class DoctorAddSerializer(serializers.ModelSerializer):
             staff.image = staff_data.get("image", staff.image)
             staff.is_active = staff_data.get("is_active", staff.is_active)
             staff.is_enable = staff_data.get("is_enable", staff.is_enable)
-
-            if staff_data.get("designation"):
-                designations = Designation.objects.filter(
-                    id__in=staff_data.get("designation")
-                )
-                staff.designation.set(designations)
-
             staff.save()
             doctor.staff = staff
 
@@ -262,19 +304,12 @@ class DoctorAddSerializer(serializers.ModelSerializer):
     def validate_specialization(self, values):
         specialization_ids = []
         for value in values:
-            designation_id = value.get("id")
-            if not Specialization.objects.filter(id=designation_id).exists():
+            specialization_id = value.get("id")
+            if not Specialization.objects.filter(id=specialization_id).exists():
                 raise serializers.ValidationError("Specialization Doesn't Exist")
-            specialization_ids.append(designation_id)
+            specialization_ids.append(specialization_id)
 
         return specialization_ids
-
-    def validate_staff(self, value):
-        if Doctor.objects.filter(staff_id=value.get("id")).exists():
-            raise serializers.ValidationError("Doctor Already Exist")
-
-        return value
-
 
 class BloodGroupSerializer(serializers.ModelSerializer):
     class Meta:
