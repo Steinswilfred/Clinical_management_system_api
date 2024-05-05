@@ -56,7 +56,7 @@ class UserIdSerializer(serializers.ModelSerializer):
 
 class StaffSerializer(serializers.ModelSerializer):
     role = RoleSerializer()
-    user = UserIdSerializer()
+    user = UserSerializer()
 
     class Meta:
         model = Staff
