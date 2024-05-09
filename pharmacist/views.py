@@ -95,6 +95,10 @@ def medistate_details(request,passed_id):
             return JsonResponse(medistate_edit_serializer.data, status=200)
             # send back response code  and the copy
         return JsonResponse(medistate_edit_serializer.error, status=400)
+    elif request.method == 'DELETE':
+        medistate_details.delete()
+        response= "Deleted Successfully"
+        return HttpResponse(response,status=204)
 
 @csrf_exempt
 def medicine_bill(request):
