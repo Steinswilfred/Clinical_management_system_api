@@ -32,8 +32,45 @@ def DeleteUser(request,passed_id):
         return HttpResponse(response,status=204)
     
 # Create your views here.
+# class LoginAPIView(APIView):
+#     # The post function t handle post request
+#     def post(self, request):
+#         # Create the serializer object from our SignupSerializer
+#         serializer = LoginSerializer(data=request.data)
+#         # If the data or the serializer is valid, then create the user and send 201 status
+#         if serializer.is_valid():
+#             username = serializer.validated_data["username"]
+#             password = serializer.validated_data["password"]
+#             # Trying to authenticate the user
+#             user = authenticate(request, username=username, password=password)
+
+#             if user is not None:
+#                 # The user was successfully authenticated, we can get his Token
+#                 token = get_object_or_404(Token, user=user)
+#                 staff = get_object_or_404(Staff, user=user)
+#                 serializer = StaffSerializer(staff)
+#                 response = {
+#                     "username": username,
+#                     "staff": serializer.data,
+#                     "token": token.key
+#                 }
+#                 return Response(response, status=status.HTTP_200_OK)
+#             else:
+#                 response = {
+#                     "status": status.HTTP_401_UNAUTHORIZED,
+#                     "message": "Sorry Invalid username or password",
+#                 }
+#                 return Response(response, status=status.HTTP_401_UNAUTHORIZED)
+
+#         response = {
+#             "status": status.HTTP_400_BAD_REQUEST,
+#             "message": "Sorry it was a bad request",
+#             "data": serializer.errors
+#         }
+#         return Response(response, status.HTTP_400_BAD_REQUEST)
+
 class LoginAPIView(APIView):
-    # The post function t handle post request
+    # The post function to handle post request
     def post(self, request):
         # Create the serializer object from our SignupSerializer
         serializer = LoginSerializer(data=request.data)
@@ -45,8 +82,12 @@ class LoginAPIView(APIView):
             user = authenticate(request, username=username, password=password)
 
             if user is not None:
-                # The user was successfully authenticated, we can get his Token
-                token = get_object_or_404(Token, user=user)
+                # Check if the user already has a token
+                token, created = Token.objects.get_or_create(user=user)
+                if not created:
+                    token.delete()
+                    token = Token.objects.create(user=user)
+
                 staff = get_object_or_404(Staff, user=user)
                 serializer = StaffSerializer(staff)
                 response = {
@@ -68,7 +109,6 @@ class LoginAPIView(APIView):
             "data": serializer.errors
         }
         return Response(response, status.HTTP_400_BAD_REQUEST)
-    
 
 class ChangePasswordView(APIView):
     def post(self, request):
